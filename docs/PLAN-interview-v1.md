@@ -61,7 +61,7 @@
 
 ### ADR-6: 평가 weight 합=100 런타임 가드 + 기준 컨텐츠 해시 (기계적 불변성)
 - **Decision**: 서버 부팅 시 `evaluation-criteria.json` 로드 → weight 합=100 + 전항목 존재 검증. 실패 시 부팅 throw.
-  - **컨텐츠 해시(SHA-256)** 를 부팅 시 계산. attempt 저장 시 `criteria_hash`(hex 8자 축약) 컬럼에 함께 저장.
+  - **컨텐츠 해시(SHA-256 전체 64자)** 를 부팅 시 계산. attempt 저장 시 `criteria_hash char(64)` 컬럼에 **full digest** 저장. UI 표시용으로만 앞 8자 축약 — DB 저장·집계·CI 비교는 반드시 full digest.
   - 버전 문자열(`"version": "v1.0"`)은 사람 가독 레이블 — 식별은 hash가 담당. 파일 내용이 바뀌면 hash가 달라지므로 수동 bump 실수 불가.
   - **CI 검증**: 커밋된 criteria 파일의 hash == 서버 코드에 hardcode된 expected_hash 비교. 불일치 시 CI 실패(배포 전 발견).
   - 대시보드 집계는 `criteria_hash`가 동일한 attempt끼리만 평균. 혼재 시 명시적 경고.
