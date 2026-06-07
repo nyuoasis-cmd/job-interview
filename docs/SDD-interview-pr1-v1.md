@@ -330,11 +330,21 @@ CREATE INDEX idx_interview_participants_session ON interview_participants(sessio
 { "ok": true }
 ```
 
+**서버 처리 순서 (atomic)**:
+1. participant 조회 → 없으면 404
+2. X-Join-Token 검증 → 없으면 401, 불일치 → 403
+3. 연결된 session.status 확인 → 'closed' → 410
+4. participant.industry_confirmed = true 확인 → 이미 확정 → 409
+5. taxonomy 유효성 검증 → invalid → 400
+6. `selected_industry`, `selected_sub`, `industry_confirmed = true` 원자적 UPDATE (단일 SQL)
+
 **Error**:
 | status | body.error | 조건 |
 |--------|-----------|------|
 | 401 | `join_token_required` | X-Join-Token 헤더 없음 |
 | 403 | `join_token_invalid` | participant.join_token ≠ 헤더 값 |
+| 410 | `session_closed` | session.status = 'closed' |
+| 409 | `industry_already_confirmed` | industry_confirmed = true (이미 면접 시작됨) |
 | 400 | `invalid_industry` | taxonomy에 없는 값 |
 | 404 | `participant_not_found` | |
 
@@ -474,6 +484,16 @@ grep -rn 'api/config\|server_client_supabase_ref_mismatch' client/src/ | wc -l
 - **Given** 다른 참가자의 ID와 그 참가자가 아닌 joinToken을 조합해 PATCH를 호출하면,
 - **When** 서버가 요청을 처리할 때,
 - **Then** `403 join_token_invalid` 응답이 반환되고 해당 참가자의 선택이 변경되지 않는다.
+
+### AC-7d: 직종 선택 — 종료된 세션 410
+- **Given** 교사가 세션을 closed로 변경한 후 학생이 유효한 joinToken으로 PATCH를 시도하면,
+- **When** 서버가 요청을 처리할 때,
+- **Then** `410 session_closed` 응답이 반환되고 selected_industry/selected_sub이 변경되지 않는다.
+
+### AC-7e: 직종 선택 — 이미 확정된 경우 409
+- **Given** 학생이 이미 직종을 선택해 industry_confirmed=true 상태에서 다시 PATCH를 시도하면,
+- **When** 서버가 요청을 처리할 때,
+- **Then** `409 industry_already_confirmed` 응답이 반환되고 기존 선택이 변경되지 않는다.
 
 ### AC-8: 직종 선택 — 이탈 방지
 - **Given** 학생이 직종 선택 화면에 있을 때,
