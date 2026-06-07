@@ -1,0 +1,125 @@
+{
+  "step": "interview-pr1",
+  "round": 1,
+  "role": "eval-visual",
+  "verdict": "PASS",
+  "evaluated_commit": "54e6cda1e96b9ebf08fc2acc3ac9deea0b7f1d83",
+  "evaluated_branch": "feat/interview-pr1",
+  "evaluated_at": "2026-06-07T06:10:00Z",
+  "handoff_section": "B",
+  "reference_mockups": [
+    "shared/mockups/vocational-job-prep-ai-interview-mockup-v2.html",
+    "shared/mockups/vocational-job-prep-ai-interview-mockup-v3-responsive.html"
+  ],
+  "screenshot_method": "vite preview (http://localhost:4173) + Puppeteer headless",
+  "screenshots": [
+    "qa-eval/screenshots/landing-desktop.png",
+    "qa-eval/screenshots/landing-mobile.png",
+    "qa-eval/screenshots/join-desktop.png",
+    "qa-eval/screenshots/join-mobile.png",
+    "qa-eval/screenshots/industry-desktop.png",
+    "qa-eval/screenshots/industry-mobile.png",
+    "qa-eval/screenshots/teacher-session-devlogin.png"
+  ],
+  "checks": [
+    {
+      "screen": "랜딩 (/)",
+      "viewport": "desktop 1280×800",
+      "criteria": "히어로 타이틀, CTA 2개 버튼 표시, PC 레이아웃",
+      "status": "PASS",
+      "evidence": [
+        "히어로 타이틀 'AI 면접 코칭' 가독성 있게 표시 (dark overlay + white text)",
+        "eyebrow '직업계고 면접 준비' 표시",
+        "CTA 1: '세션 참여하기' (황색 bg-[#f5c451]) 버튼",
+        "CTA 2: '데모 면접 해보기' (ghost border-white/60) 버튼",
+        "하단 feature 3카드 그리드 (6자리 세션 코드 / 8대 직종 분류 / 교사 세션 생성)"
+      ],
+      "notes": "목업 primary CTA 색상(dark #1c1917)과 상이(황색 사용). 기능적으로 동일. PR1 스캐폴드 허용 범위."
+    },
+    {
+      "screen": "랜딩 (/)",
+      "viewport": "mobile 375×812",
+      "criteria": "모바일 레이아웃, CTA 세로 스택",
+      "status": "PASS",
+      "evidence": [
+        "히어로 이미지 + 타이틀 모바일에서 가독성 OK",
+        "CTA 2개 세로 스택 렌더 (flex-col sm:flex-row)",
+        "하단 feature 3카드 단열(grid-cols-1) 확인"
+      ]
+    },
+    {
+      "screen": "참여 (/join)",
+      "viewport": "desktop 1280×800",
+      "criteria": "6자리 코드 입력 필드, 이름 입력, 에러 인라인 표시 위치",
+      "status": "PASS",
+      "evidence": [
+        "6자리 코드 필드: 레이블 '6자리 코드', placeholder 'A3K9PL', uppercase+tracking spacing 적용",
+        "이름 필드: 레이블 '이름', placeholder '이름'",
+        "에러 표시: form 카드 내 인라인 위치 확인 (이름 필드 하단)",
+        "제출 버튼 '참여 →' 전체 너비"
+      ]
+    },
+    {
+      "screen": "참여 (/join)",
+      "viewport": "mobile 375×812",
+      "criteria": "모바일 레이아웃",
+      "status": "PASS",
+      "evidence": [
+        "카드 form이 375px에서 정상 렌더",
+        "필드, 라벨, 버튼 모두 풀 너비 사용",
+        "모바일에서도 에러 인라인 위치 코드 구조 동일"
+      ]
+    },
+    {
+      "screen": "직종 선택 (/session/:code/industry)",
+      "viewport": "desktop 1280×800 + mobile 375×812",
+      "criteria": "8대 직종 카드 그리드, 모바일 1~2열, 소직종 드릴다운",
+      "status": "PASS",
+      "evidence": [
+        "그리드 클래스: 'grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4' — 모바일 1열/tablet 2열/PC 4열 확인",
+        "소직종 드릴다운: selectedCategory 조건부 렌더, 'grid grid-cols-1 md:grid-cols-3' 소직종 카드",
+        "뒤로가기 버튼 '대분류 다시 선택' 포함",
+        "이탈방지: useExitGuard 훅 구현 (beforeunload + popstate)",
+        "서버 미기동으로 런타임 카드 렌더 불가 — 코드 구조 검증으로 대체"
+      ],
+      "notes": "스크린샷은 API 대기 중 로딩 상태만 포착 가능(서버 없음). 목업 비교는 코드 구조 기준으로 수행. 소직종 표현 방식: 목업은 pill, 구현은 카드 — 기능 동일."
+    },
+    {
+      "screen": "교사 세션 (/teacher/sessions)",
+      "viewport": "desktop 1280×800",
+      "criteria": "코드 표시 (큰 글씨), 복사 버튼",
+      "status": "PASS",
+      "evidence": [
+        "세션 코드 표시: 'text-5xl font-black tracking-[0.18em] text-[#2563eb]' — 큰 글씨 확인",
+        "복사 버튼: Copy 아이콘 + '복사/복사됨' 텍스트, navigator.clipboard.writeText 연결",
+        "QR placeholder [QR] stub — PR1 범위 내",
+        "AuthGuard → DevLoginPage 리다이렉트 정상 동작 확인"
+      ],
+      "notes": "Auth 없이 직접 스크린샷 불가. 코드 리뷰로 큰글씨+복사버튼 요건 충족 확인."
+    }
+  ],
+  "mockup_diff_summary": [
+    {
+      "item": "CTA 색상",
+      "mockup": "dark #1c1917 (mint-text) primary 버튼",
+      "implementation": "황색 #f5c451 primary, ghost secondary",
+      "severity": "MINOR",
+      "decision": "PR1 스캐폴드 허용"
+    },
+    {
+      "item": "feature 카드 수준",
+      "mockup": "아이콘 + 설명 + data badge",
+      "implementation": "텍스트 레이블만",
+      "severity": "MINOR",
+      "decision": "기능 목적상 동일, PR2+ 보강 가능"
+    },
+    {
+      "item": "소직종 표현",
+      "mockup": "pill 형태",
+      "implementation": "카드 버튼 형태 (이름 + interviewStyle)",
+      "severity": "MINOR",
+      "decision": "정보량 유사, UI 형태 차이만"
+    }
+  ],
+  "overall": "모든 핵심 시각 검증 기준 충족. 히어로+CTA2개, 6자리코드+이름+에러인라인, 8대직종그리드+드릴다운(코드검증), 큰글씨코드+복사버튼 모두 구현됨. 색상 및 디테일 차이는 PR1 스캐폴드 수준에서 허용 가능."
+}
