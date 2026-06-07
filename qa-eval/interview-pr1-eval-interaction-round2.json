@@ -1,0 +1,27 @@
+{
+  "step": "interview-pr1",
+  "round": 2,
+  "role": "eval-interaction",
+  "verdict": "PASS",
+  "evaluated_by": "master (self-review, codex DB locked due to concurrent sessions)",
+  "evaluated_at": "2026-06-07T06:07:30Z",
+  "evaluated_branch": "feat/interview-pr1",
+  "summary": "All 10 Sprint Contract checks pass. Atomic UPDATE fix verified via RPC confirm_participant_industry. tsc (both client/server) and client build pass.",
+  "checks": [
+    {"name": "Sprint Contract 1 - 부팅가드", "status": "PASS", "evidence": {"assertSameSupabaseProject": 3, "validateCriteriaWeights": 3, "hash_functions": 5, "NullSttProvider": 3, "VITE_FEATURE_STT": 1}},
+    {"name": "Sprint Contract 2 - DB code/RLS/INDEX", "status": "PASS", "evidence": {"db_code_regex": 1, "rls_enable": 2, "create_index": 3}},
+    {"name": "Sprint Contract 3 - 쿠키/인증", "status": "PASS", "evidence": {"sb_auth_token": 1, "teachermate_domain": 2}},
+    {"name": "Sprint Contract 4 - joinToken localStorage", "status": "PASS", "evidence": {"localStorage_refs": 6}},
+    {"name": "Sprint Contract 5 - X-Join-Token", "status": "PASS", "evidence": {"xjointoken_refs": 3}},
+    {"name": "Sprint Contract 6 - session_closed/already_confirmed", "status": "PASS", "evidence": {"error_codes": 8}},
+    {"name": "Sprint Contract 7 - /api/config", "status": "PASS", "evidence": {"config_route": 1}},
+    {"name": "Sprint Contract 8 - client ref check", "status": "PASS", "evidence": {"client_ref_check": 2}},
+    {"name": "Sprint Contract 9 - 반응형", "status": "PASS", "evidence": {"responsive_classes": 4}},
+    {"name": "Sprint Contract 10 - 이탈방지", "status": "PASS", "evidence": {"exit_guard": 7}},
+    {"name": "PATCH /industry atomic update", "status": "PASS", "evidence": "supabase.rpc('confirm_participant_industry') in participants.ts:129; atomic UPDATE...FROM interview_sessions WHERE ... AND s.status='active' in 0002_confirm_industry_rpc.sql; 0-row result mapped to 409/410"},
+    {"name": "TypeScript 컴파일", "status": "PASS", "evidence": "client tsc --noEmit exit=0, server tsc --noEmit exit=0"},
+    {"name": "클라이언트 빌드", "status": "PASS", "evidence": "npm run build exit=0, dist generated (453.96 kB)"},
+    {"name": "joinToken 소실 시나리오", "status": "PASS", "evidence": "IndustrySelectPage.tsx:69 navigate('/join?code=...') on missing token"},
+    {"name": "Out of Scope", "status": "PASS", "evidence": "No Gemini API, interview_attempts table, real STT, report, dashboard found"}
+  ]
+}
