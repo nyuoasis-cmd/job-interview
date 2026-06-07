@@ -124,19 +124,28 @@ participantsRouter.patch('/api/participants/:id/industry', async (req, res, next
       return
     }
 
-    const { error: updateError } = await supabaseAdmin
-      .from('interview_participants')
-      .update({
-        selected_industry: selectedIndustry,
-        selected_sub: selectedSub,
-        industry_confirmed: true,
+    // 단일 atomic RPC: 세션 active + token + industry_confirmed=false 동시 검증 후 UPDATE
+    const { data: rpcResult, error: rpcError } = await supabaseAdmin
+      .rpc('confirm_participant_industry', {
+        p_participant_id: participantId,
+        p_join_token: joinToken.trim(),
+        p_industry: selectedIndustry,
+        p_sub: selectedSub,
       })
-      .eq('id', participantId)
-      .eq('join_token', joinToken.trim())
-      .eq('industry_confirmed', false)
 
-    if (updateError) {
-      throw updateError
+    if (rpcError) {
+      throw rpcError
+    }
+
+    const result = rpcResult as { ok: boolean; reason?: string }
+    if (!result.ok) {
+      if (result.reason === 'already_confirmed') {
+        res.status(409).json({ error: 'industry_already_confirmed' })
+        return
+      }
+      // session_closed 또는 기타 race
+      res.status(410).json({ error: 'session_closed' })
+      return
     }
 
     res.json({ ok: true })
