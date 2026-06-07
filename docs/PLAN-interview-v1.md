@@ -59,11 +59,12 @@
   - 대시보드 집계는 **같은 `criteria_version`끼리만** 평균(버전 혼재 시 명시적 경고).
 - **Consequences**: (+)집계 재현 가능 (+)기준 변경 후에도 과거 데이터 오염 없음 (−)행 크기 증가(JSONB) (−)criteria_version 관리 필요.
 
-### ADR-6: 평가 weight 합=100 런타임 가드 + 기준 버전 관리
+### ADR-6: 평가 weight 합=100 런타임 가드 + 기준 컨텐츠 해시 (기계적 불변성)
 - **Decision**: 서버 부팅 시 `evaluation-criteria.json` 로드 → weight 합=100 + 전항목 존재 검증. 실패 시 부팅 throw.
-  - `evaluation-criteria.json`에 `"version": "v1.0"` 필드 추가. 파일 변경 시 버전 bump 의무.
-  - attempt 저장 시 `criteria_version` 컬럼에 현재 버전 기록(ADR-5 연동).
-  - 대시보드 쿼리는 `criteria_version`으로 필터 — 버전 혼재 데이터를 암묵적으로 평균 금지.
+  - **컨텐츠 해시(SHA-256)** 를 부팅 시 계산. attempt 저장 시 `criteria_hash`(hex 8자 축약) 컬럼에 함께 저장.
+  - 버전 문자열(`"version": "v1.0"`)은 사람 가독 레이블 — 식별은 hash가 담당. 파일 내용이 바뀌면 hash가 달라지므로 수동 bump 실수 불가.
+  - **CI 검증**: 커밋된 criteria 파일의 hash == 서버 코드에 hardcode된 expected_hash 비교. 불일치 시 CI 실패(배포 전 발견).
+  - 대시보드 집계는 `criteria_hash`가 동일한 attempt끼리만 평균. 혼재 시 명시적 경고.
 
 ### ADR-7: 진입 = BUILDER-UX-POLICY §3 + Ghost CTA 폐지
 - **Decision**: 학생 = 교사 세션의 6자리 코드+이름으로 참여. **"혼자 만들어볼게요 →" 류 Ghost CTA 신규 금지**. 공개 모의면접(데모) = 별도 `/demo` 라우트(세션 불요).
