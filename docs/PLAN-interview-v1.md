@@ -46,10 +46,10 @@
 ### ADR-4: 꼬리질문 매칭 = 정규화 + 형태소 전처리 전략 명시
 - **Context**: 단일 `triggerKeyword` 한국어 단순 매칭은 조사/어미/띄어쓰기 변형으로 불안정.
 - **Decision**: triggerKeyword 배열(`variants[]`) 확장 + 서버에서 정규화(공백 압축·조사 스트리핑 기본 목록) 후 매칭. 매칭 우선순위: 정확 > 포함. 중복 dedup.
-  - **형태소 라이브러리**: `hangul-js` or `natural` 경량 옵션 PR2 착수 전 평가·결정 — undecided인 채로 PR2 착수 금지.
+  - **형태소 라이브러리 — ✅ 결정 (2026-06-07, jery 승인): 외부 라이브러리 미채택.** 실측상 `hangul-js`(자모 분해/조합 유틸)·`natural`(영어용 NLP)은 **둘 다 한국어 형태소 분석기가 아님** → 택1 자체가 무효. 매칭은 **라이브러리 없이** `lib/textNormalize.ts`(NFC·공백 압축·소문자) + `triggerKeyword`+`variants[]`(데이터 변형배열) + 조사경계 휴리스틱(키워드 뒤 조사/공백/문장부호만 허용)으로 처리. 진짜 형태소 분석기(은전한닢 WASM·mecab-ko) 도입은 비용·Render 배포·번들 부담 대비 과함 → MVP 제외(자매 설계 `job-ai-interview-feature/PLAN`과 일치). no-match fallback=Gemini는 아래 항목대로 유지.
   - **no-match fallback**: 매칭 패턴 없으면 Gemini에 "이 답변에 적절한 꼬리질문 1개 생성" 위임(데이터 기반 우선, AI 보완).
   - **PR2 수용 기준(AC)**: 한국어 답변 픽스처 20개(조사변형·띄어쓰기·축약 포함) → 꼬리질문 매칭 recall ≥ 80%, false-positive ≤ 10%. 이 게이트 통과 전 PR2 APPROVED 없음.
-- **Consequences**: (+)예측 가능한 데이터 기반 꼬리질문 (+)한국어 변형 커버 (+)게이트로 품질 보장 (−)variants 관리 비용 (−)형태소 라이브러리 평가 선행 필요.
+- **Consequences**: (+)예측 가능한 데이터 기반 꼬리질문 (+)한국어 변형 커버 (+)게이트로 품질 보장 (+)외부 의존성 0·비용0·동시접속 무제한·결정적 (−)variants 데이터 관리 비용 (−)미등록 변형에 약함 → variants[] 보강 + no-match Gemini fallback으로 완화.
 
 ### ADR-5: 면접 시도(Attempt) 영속화 — 불변 스냅샷으로 집계 재현성 보장
 - **Context**: answers/reports만 저장 → 기준 변경·재시도·재생성 시 대시보드 집계 조용히 변경.

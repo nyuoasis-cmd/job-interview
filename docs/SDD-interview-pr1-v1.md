@@ -687,12 +687,12 @@ CREATE INDEX idx_interview_attempts_criteria    ON interview_attempts(criteria_h
 | PR | branch | base 분기 시점 | 시작 블로킹 조건 | 비고 |
 |----|--------|--------------|----------------|------|
 | PR1 | `feat/interview-pr1` | 현재 master (`9802436`) | 없음 | 이 SDD 대상 |
-| PR2 | `feat/interview-pr2` | **PR1이 master에 머지된 후 `git checkout -b feat/interview-pr2 origin/master`** | PR1 머지 + 형태소 전략 결정(ADR-4) | Gemini 첫 호출 |
+| PR2 | `feat/interview-pr2` | **PR1이 master에 머지된 후 `git checkout -b feat/interview-pr2 origin/master`** | PR1 머지 + ~~형태소 전략 결정(ADR-4)~~ ✅해소(2026-06-07: 라이브러리 미채택) | Gemini 첫 호출 |
 | PR3 | `feat/interview-pr3` | **PR1+PR2 머지 후 origin/master** | PR2 머지 + attempt DDL 확인 | 리포트 |
 | PR4 | `feat/interview-pr4` | PR1 머지 후 origin/master | jery STT provider 승인 | 음성 |
 | PR5 | `feat/interview-pr5` | **PR1+PR2+PR3 머지 후 origin/master** | PR1~3 머지 | 교사 대시보드 |
 
 **규칙**: 각 PR은 이전 PR이 master에 **완전히 머지된 이후** `origin/master` 최신 HEAD를 base로 분기한다. Stacked PR(미머지 PR을 base로 삼는 구조) 금지. 동시 병렬 worktree도 같은 dir 공유 충돌 방지를 위해 금지.
 
-**형태소 결정 게이트 (PR2 블로킹)**:
-PR2 작업 시작 전 `hangul-js` vs `natural` 경량 옵션 평가 결과를 SDD에 명시. 미결 상태로 PR2 코드 착수 금지 (ADR-4).
+**형태소 결정 게이트 (PR2 블로킹) — ✅ 해소 (2026-06-07, jery 승인)**:
+평가 결과: `hangul-js`(자모 분해/조합 유틸)·`natural`(영어용 NLP)은 **둘 다 한국어 형태소 분석기가 아니어서** ADR-4의 "택1" 전제가 무효. **결정 = 외부 형태소 라이브러리 미채택**, 라이브러리 없이 `lib/textNormalize.ts`(NFC·공백 압축·소문자) + `triggerKeyword`+`variants[]` + 조사경계 휴리스틱으로 매칭(진짜 형태소 분석기는 비용 대비 과함으로 MVP 제외, no-match만 Gemini fallback). 게이트 해소 → PR2 코드 착수 가능. PR2 AC(픽스처 20개 recall ≥80%·false-positive ≤10%, ADR-4)는 그대로 유지.
