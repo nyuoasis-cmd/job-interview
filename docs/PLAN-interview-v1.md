@@ -27,27 +27,43 @@
 - **Consequences**: (+)한도 넉넉·비용 낮음 (−)Gemini 한국어 STAR 피드백 품질 = 정적 데이터(star-examples 24개·criteria 8개)로 프롬프트 그라운딩해 보완.
 
 ### ADR-2: DB = 공유 Supabase(jblkb) + `interview_*` 테이블, single-ref 부팅 가드
-- **Decision**: 인증·데이터 모두 공유 jblkb. 서버 부팅 시 `assertSameSupabaseProject()` — data URL·auth URL·JWT ref 전부 동일 검증, 불일치 시 throw([[portfolio-sso-auth-data-project-split]] 401 재발 차단).
+- **Decision**: 인증·데이터 모두 공유 jblkb. **단일 공유 config 계약**으로 강제:
+  - **서버** 부팅 시 `assertSameSupabaseProject()` — `SUPABASE_URL`(data) ref · `SUPABASE_AUTH_URL`(auth) ref · service_role JWT ref · anon JWT ref **4개** 동일 검증, 불일치 시 throw.
+  - **클라이언트** — `VITE_SUPABASE_URL` ref가 서버 data URL ref와 동일인지 빌드 시 또는 app init 시 검증. 쿠키 issuer/audience도 같은 ref.
+  - **통합 테스트**: 의도적으로 split된 ref로 서버 기동 → throw 확인(서빙 전 실패 보장).
+  - 이 가드 없이는 frontend가 다른 프로젝트에서 토큰을 발급받아도 서버가 모름([[portfolio-sso-auth-data-project-split]] 401 재발 패턴).
 - **RLS 멀티테넌시**: RLS deny-all + 서버 service_role + 라우트별 `requireSessionOwner`(교사 세션 소유권 체크 의무).
 - **DB code 정규식**: `char(6)` + `CHECK (code ~ '^[A-Z0-9]{6}$')` — API 거부와 불일치 차단.
 
 ### ADR-3: STT(발화분석) = 어댑터+NullProvider+플래그, jery 승인 게이트
-- **Decision**: `SttProvider` 인터페이스 + `NullSttProvider`(no-op) 기본 주입. `VITE_FEATURE_STT=false` 기본. STT 없이 텍스트 면접 전 경로 동작·테스트 통과 보장.
-- STT env 전무 시 음성 UI 렌더 안 함(조건부 import). 실제 provider 선택은 jery 승인 후.
-- **Consequences**: (+)텍스트 면접부터 출시 가능 (−)발화분석 UI는 PR4까지 보류.
+- **Decision**: `SttProvider` 인터페이스 + **서버·클라 모두 `NullSttProvider`(no-op) 기본**. `VITE_FEATURE_STT=false` 기본.
+  - STT 패키지/provider는 **플래그 활성화 분기 안에서만 lazy 로딩** — 플래그 OFF 시 import 자체 없음(빌드·부팅 분리).
+  - **CI 보장**: STT env 변수 전무 상태에서 서버 부팅·빌드·PR1~3 텍스트 면접 라우트 전부 통과하는 테스트.
+  - 음성 UI 컴포넌트는 플래그 OFF 시 렌더 안 함(조건부 import). route 등록도 플래그 뒤.
+- 실제 provider 선택 = jery 승인 후(Web Speech / 서버STT / Gemini audio).
+- **Consequences**: (+)텍스트 면접부터 출시 가능 (+)실수로 STT 패키지 끼어들어도 CI가 차단 (−)발화분석 UI는 PR4까지 보류.
 
 ### ADR-4: 꼬리질문 매칭 = 정규화 + 형태소 전처리 전략 명시
 - **Context**: 단일 `triggerKeyword` 한국어 단순 매칭은 조사/어미/띄어쓰기 변형으로 불안정.
-- **Decision**: triggerKeyword 배열(`variants[]`) 확장 + 서버에서 정규화(공백 압축·조사 스트리핑 기본 목록) 후 매칭. 매칭 우선순위: 정확 > 포함. 중복 dedup. 형태소 분석 라이브러리 도입은 PR2에서 평가(Over-engineering 판단 후).
-- **Consequences**: (+)예측 가능한 데이터 기반 꼬리질문 (+)한국어 변형 커버 (−)variants 관리 비용.
+- **Decision**: triggerKeyword 배열(`variants[]`) 확장 + 서버에서 정규화(공백 압축·조사 스트리핑 기본 목록) 후 매칭. 매칭 우선순위: 정확 > 포함. 중복 dedup.
+  - **형태소 라이브러리**: `hangul-js` or `natural` 경량 옵션 PR2 착수 전 평가·결정 — undecided인 채로 PR2 착수 금지.
+  - **no-match fallback**: 매칭 패턴 없으면 Gemini에 "이 답변에 적절한 꼬리질문 1개 생성" 위임(데이터 기반 우선, AI 보완).
+  - **PR2 수용 기준(AC)**: 한국어 답변 픽스처 20개(조사변형·띄어쓰기·축약 포함) → 꼬리질문 매칭 recall ≥ 80%, false-positive ≤ 10%. 이 게이트 통과 전 PR2 APPROVED 없음.
+- **Consequences**: (+)예측 가능한 데이터 기반 꼬리질문 (+)한국어 변형 커버 (+)게이트로 품질 보장 (−)variants 관리 비용 (−)형태소 라이브러리 평가 선행 필요.
 
-### ADR-5: 면접 시도(Attempt) 영속화 — 대시보드 집계 재현성
-- **Context**: answers/reports만 저장하면 대시보드 평균·약점 집계 재현 불가(리프레시·재시도·중복 시도 시 모호).
-- **Decision**: `interview_attempts`(participant_id, session_id, industry_code, assigned_question_ids[], status, started_at, completed_at, report_id) 테이블 추가. 대시보드는 attempt 기준 집계.
-- **Consequences**: (+)집계 재현 가능 (+)학생 다회 연습 구분 (−)스키마 복잡도 소폭 증가.
+### ADR-5: 면접 시도(Attempt) 영속화 — 불변 스냅샷으로 집계 재현성 보장
+- **Context**: answers/reports만 저장 → 기준 변경·재시도·재생성 시 대시보드 집계 조용히 변경.
+- **Decision**: `interview_attempts`에 **불변 평가 사실 스냅샷** 함께 저장:
+  - `assigned_question_ids[]`, `submitted_answers[]`(텍스트), `per_criterion_scores JSONB`, `weakness_tags[]`, `criteria_version`(예: `v1.0`), `model_version`(예: `gemini-2.5-flash`), `completed_at`
+  - attempt당 canonical 완료 리포트 1개(idempotent — 동일 attempt_id로 재요청 시 기존 리포트 반환).
+  - 대시보드 집계는 **같은 `criteria_version`끼리만** 평균(버전 혼재 시 명시적 경고).
+- **Consequences**: (+)집계 재현 가능 (+)기준 변경 후에도 과거 데이터 오염 없음 (−)행 크기 증가(JSONB) (−)criteria_version 관리 필요.
 
-### ADR-6: 평가 weight 합=100 런타임 가드
-- **Decision**: 서버 부팅 시 `evaluation-criteria.json` 로드 → weight 합=100 + 전항목 존재 검증. 실패 시 부팅 throw(데이터 변경 시 즉시 발견).
+### ADR-6: 평가 weight 합=100 런타임 가드 + 기준 버전 관리
+- **Decision**: 서버 부팅 시 `evaluation-criteria.json` 로드 → weight 합=100 + 전항목 존재 검증. 실패 시 부팅 throw.
+  - `evaluation-criteria.json`에 `"version": "v1.0"` 필드 추가. 파일 변경 시 버전 bump 의무.
+  - attempt 저장 시 `criteria_version` 컬럼에 현재 버전 기록(ADR-5 연동).
+  - 대시보드 쿼리는 `criteria_version`으로 필터 — 버전 혼재 데이터를 암묵적으로 평균 금지.
 
 ### ADR-7: 진입 = BUILDER-UX-POLICY §3 + Ghost CTA 폐지
 - **Decision**: 학생 = 교사 세션의 6자리 코드+이름으로 참여. **"혼자 만들어볼게요 →" 류 Ghost CTA 신규 금지**. 공개 모의면접(데모) = 별도 `/demo` 라우트(세션 불요).
