@@ -460,10 +460,20 @@ grep -rn 'api/config\|server_client_supabase_ref_mismatch' client/src/ | wc -l
 - **When** "제조·기계" 카드를 클릭하면,
 - **Then** 소직종 목록("반도체·전자", "자동차·기계금속", "화학·식품·섬유")이 표시된다.
 
-### AC-7: 직종 선택 — 저장
-- **Given** 학생이 소직종 "반도체·전자"를 선택하고,
+### AC-7: 직종 선택 — 저장 (정상)
+- **Given** 학생이 POST /join으로 입장해 받은 `joinToken`이 sessionStorage에 있고, 소직종 "반도체·전자"를 선택했을 때,
 - **When** "면접 시작" 버튼을 누르면,
-- **Then** PATCH /api/participants/:id/industry가 호출되고 (PR2 stub) "준비 중입니다" 안내 화면이 표시된다.
+- **Then** `X-Join-Token: <joinToken>` 헤더를 포함한 PATCH 요청이 성공(200)하고, (PR2 stub) "준비 중입니다" 안내 화면이 표시된다.
+
+### AC-7b: 직종 선택 — joinToken 없을 때 401
+- **Given** X-Join-Token 헤더 없이 PATCH /api/participants/:id/industry를 호출하면,
+- **When** 서버가 요청을 처리할 때,
+- **Then** `401 join_token_required` 응답이 반환되고 selected_industry/selected_sub이 변경되지 않는다.
+
+### AC-7c: 직종 선택 — 다른 참가자 토큰으로 403
+- **Given** 다른 참가자의 ID와 그 참가자가 아닌 joinToken을 조합해 PATCH를 호출하면,
+- **When** 서버가 요청을 처리할 때,
+- **Then** `403 join_token_invalid` 응답이 반환되고 해당 참가자의 선택이 변경되지 않는다.
 
 ### AC-8: 직종 선택 — 이탈 방지
 - **Given** 학생이 직종 선택 화면에 있을 때,
