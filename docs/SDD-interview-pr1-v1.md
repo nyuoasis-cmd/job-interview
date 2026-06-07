@@ -296,7 +296,12 @@ CREATE INDEX idx_interview_participants_session ON interview_participants(sessio
   "joinToken": "<64자 hex>"
 }
 ```
-- `joinToken`: 서버가 생성한 `crypto.randomBytes(32).toString('hex')`. 클라이언트는 `sessionStorage`에 보관.
+- `joinToken`: 서버가 생성한 `crypto.randomBytes(32).toString('hex')`. 클라이언트는 **`localStorage`**에 `interview_join_token_{participantId}` 키로 보관.
+  - `localStorage` 채택 이유: `sessionStorage`는 탭 닫힘 시 소실 → PATCH 불가 상태(❌ preflight FAIL 해소). `localStorage`는 브라우저 재시작 후에도 유지되어 소실 케이스 대폭 감소.
+  - **토큰 소실 대응 시나리오 (AC-12)**:
+    - `/session/:code/industry` 로드 시 `localStorage`에 토큰이 없으면 → `/join?code=:code` 로 리다이렉트 (새 participant 생성 흐름)
+    - 세션이 `closed`이고 토큰도 없으면 → "세션이 종료됐습니다" 인라인 안내.
+  - 세션 `closed` 후 서버가 410을 반환하므로 저장된 토큰은 자동 무효화됨 (클라이언트 명시적 삭제 불요).
 - **주의**: `joinToken`은 응답에서 단 1회 반환. DB에 저장된 값은 이후 API에서 서버가 직접 비교하며, 재발급 없음.
 - `join_token`은 응답에서 노출하지 않음(64자 hex는 joinToken과 동일 값이지만 DB 컬럼명은 join_token).
 
@@ -495,6 +500,30 @@ grep -rn 'api/config\|server_client_supabase_ref_mismatch' client/src/ | wc -l
 - **When** 서버가 요청을 처리할 때,
 - **Then** `409 industry_already_confirmed` 응답이 반환되고 기존 선택이 변경되지 않는다.
 
+### AC-12: joinToken 소실 → /join 재유도
+- **Given** 학생이 `/session/:code/industry`를 직접 열었을 때 `localStorage`에 joinToken이 없으면,
+- **When** 페이지가 로드되면,
+- **Then** `/join?code=:code`로 자동 리다이렉트되어 학생이 이름을 다시 입력해 새로 입장한다.
+
+### AC-13: joinToken 소실 + 세션 종료
+- **Given** localStorage에 joinToken이 없고 세션 status=closed일 때 `/session/:code/industry`를 열면,
+- **When** 페이지가 로드되면,
+- **Then** "이 세션은 이미 종료됐습니다" 인라인 메시지가 표시되고, /join 리다이렉트는 일어나지 않는다.
+
+### AC-14: PATCH 에러 — 클라이언트 인라인 표시
+- **Given** PATCH /api/participants/:id/industry가 서버 에러를 반환할 때,
+- **When** 각 에러 코드별로:
+  - 401(join_token_required): "인증 정보가 없습니다. 다시 입장해주세요."
+  - 403(join_token_invalid): "입장 정보가 올바르지 않습니다. 다시 입장해주세요."
+  - 410(session_closed): "세션이 종료되어 직종을 선택할 수 없습니다."
+  - 409(industry_already_confirmed): "이미 직종을 선택하고 면접을 시작했습니다."
+- **Then** 해당 메시지가 "면접 시작" 버튼 하단에 `text-red-600` 인라인으로 표시된다. 모달·토스트 금지.
+
+### AC-15: 모바일 반응형 — 직종 선택 화면
+- **Given** 모바일(375px) 기기에서 `/session/:code/industry`를 열면,
+- **When** 8대 직종 카드 그리드가 표시될 때,
+- **Then** 카드가 1~2열로 렌더링되어 가로 스크롤 없이 볼 수 있고, "면접 시작" 버튼이 화면 하단에 눌리기 충분한 크기로 표시된다.
+
 ### AC-8: 직종 선택 — 이탈 방지
 - **Given** 학생이 직종 선택 화면에 있을 때,
 - **When** 브라우저 뒤로가기를 시도하면,
@@ -574,6 +603,14 @@ grep -rn "'/api/config'" server/src/ | wc -l
 
 # 14. 클라이언트 ref 검증 함수
 grep -rn 'assertClientSupabaseConsistency\|server_client_supabase_ref_mismatch' client/src/ | wc -l
+# expected: >= 1
+
+# 15. joinToken localStorage 저장 패턴
+grep -rn 'interview_join_token_\|localStorage' client/src/ | wc -l
+# expected: >= 1
+
+# 16. 모바일 반응형 그리드
+grep -rn 'grid-cols-1\|sm:grid-cols\|md:grid-cols' client/src/ | wc -l
 # expected: >= 1
 ```
 
