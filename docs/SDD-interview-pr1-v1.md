@@ -476,7 +476,7 @@ grep -rn 'api/config\|server_client_supabase_ref_mismatch' client/src/ | wc -l
 - **Then** 소직종 목록("반도체·전자", "자동차·기계금속", "화학·식품·섬유")이 표시된다.
 
 ### AC-7: 직종 선택 — 저장 (정상)
-- **Given** 학생이 POST /join으로 입장해 받은 `joinToken`이 sessionStorage에 있고, 소직종 "반도체·전자"를 선택했을 때,
+- **Given** 학생이 POST /join으로 입장해 받은 `joinToken`이 localStorage(`interview_join_token_{participantId}`)에 있고, 소직종 "반도체·전자"를 선택했을 때,
 - **When** "면접 시작" 버튼을 누르면,
 - **Then** `X-Join-Token: <joinToken>` 헤더를 포함한 PATCH 요청이 성공(200)하고, (PR2 stub) "준비 중입니다" 안내 화면이 표시된다.
 
