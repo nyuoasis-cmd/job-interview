@@ -54,7 +54,8 @@
 ### ADR-5: 면접 시도(Attempt) 영속화 — 불변 스냅샷으로 집계 재현성 보장
 - **Context**: answers/reports만 저장 → 기준 변경·재시도·재생성 시 대시보드 집계 조용히 변경.
 - **Decision**: `interview_attempts`에 **불변 평가 사실 스냅샷** 함께 저장:
-  - `assigned_question_ids[]`, `submitted_answers[]`(텍스트), `per_criterion_scores JSONB`, `weakness_tags[]`, `criteria_version`(예: `v1.0`), `model_version`(예: `gemini-2.5-flash`), `completed_at`
+  - `assigned_question_ids[]`, `submitted_answers[]`(텍스트), `per_criterion_scores JSONB`, `weakness_tags[]`, `criteria_hash char(64)`(ADR-6), **`questions_bank_hash char(64)`**(부팅 시 `questions-by-industry.json` SHA-256 full digest — ID 재사용 상태에서 질문 내용 변경 시 hash 달라짐), `model_version`(예: `gemini-2.5-flash`), `completed_at`
+  - 리포트 렌더/감사 경로는 `questions_bank_hash`로 식별된 정확한 스냅샷 기준으로 해석(현재 뱅크 기준 렌더 금지).
   - attempt당 canonical 완료 리포트 1개(idempotent — 동일 attempt_id로 재요청 시 기존 리포트 반환).
   - 대시보드 집계는 **같은 `criteria_version`끼리만** 평균(버전 혼재 시 명시적 경고).
 - **Consequences**: (+)집계 재현 가능 (+)기준 변경 후에도 과거 데이터 오염 없음 (−)행 크기 증가(JSONB) (−)criteria_version 관리 필요.
