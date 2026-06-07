@@ -1,0 +1,97 @@
+{
+  "step": "interview-pr1",
+  "round": 1,
+  "role": "eval-interaction",
+  "verdict": "REVISE",
+  "evaluated_commit": "54e6cda1e96b9ebf08fc2acc3ac9deea0b7f1d83",
+  "evaluated_branch": "feat/interview-pr1",
+  "evaluated_at": "2026-06-07T05:32:09Z",
+  "handoff_section": "C",
+  "summary": "Sprint Contract grep checks pass and TypeScript/build pass after workspace dependencies are installed. Revision is required because PATCH /api/participants/:id/industry is not implemented as a single atomic update covering joined active session, token match, confirmed check, taxonomy validation, and update.",
+  "checks": [
+    {
+      "name": "Sprint Contract grep 기준 전체",
+      "status": "PASS",
+      "evidence": {
+        "assertSameSupabaseProject": 3,
+        "validateCriteriaWeights": 3,
+        "hash_functions": 5,
+        "NullSttProvider": 3,
+        "VITE_FEATURE_STT": 1,
+        "db_code_regex": 1,
+        "rls_enable": 2,
+        "sb_auth_token": 1,
+        "teachermate_cookie_domain": 2,
+        "teacher_auth_guard": 2,
+        "industries_routes": 5,
+        "session_code_alphabet": 3,
+        "participant_name_constraint": 2,
+        "api_config_route": 1,
+        "client_config_crosscheck": 2
+      }
+    },
+    {
+      "name": "부팅 가드 함수 시그니처 및 서버 호출",
+      "status": "PASS",
+      "evidence": [
+        "server/src/db.ts defines assertSameSupabaseProject()",
+        "server/src/lib/bootGuards.ts defines validateCriteriaWeights()",
+        "server/src/index.ts calls assertSameSupabaseProject(), validateCriteriaWeights(), computeCriteriaHash(), computeQuestionsBankHash(), and binds NullSttProvider"
+      ]
+    },
+    {
+      "name": "PATCH /industry atomic update",
+      "status": "FAIL",
+      "evidence": [
+        "server/src/routes/participants.ts performs a SELECT at lines 91-95, then validates token/session/confirmed/taxonomy in application code, then performs UPDATE at lines 127-137.",
+        "The UPDATE only constrains id, join_token, and industry_confirmed=false. It does not join/check active session status in the same statement and does not detect zero updated rows for a concurrent already_confirmed transition.",
+        "This leaves a race where session closure or participant confirmation after the SELECT can still produce a 200 response or stale update behavior, violating §C's single atomic UPDATE SQL requirement."
+      ],
+      "required_revision": "Move the participant/session status/token/confirmed checks that affect write eligibility into a single atomic database update path, or use an RPC/SQL statement with explicit row-count/error mapping for 410 and 409 race cases."
+    },
+    {
+      "name": "TypeScript 컴파일",
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "cd client && PATH=../node_modules/.bin:$PATH tsc --noEmit",
+          "exit_code": 0
+        },
+        {
+          "command": "cd server && PATH=../node_modules/.bin:$PATH tsc --noEmit",
+          "exit_code": 0
+        }
+      ],
+      "note": "Direct bare tsc failed before PATH adjustment because workspace node_modules/.bin was not in the non-npm shell PATH. The same compiler passes when resolved from workspace dependencies."
+    },
+    {
+      "name": "클라이언트 빌드",
+      "status": "PASS",
+      "commands": [
+        {
+          "command": "cd client && npm run build",
+          "exit_code": 0
+        }
+      ]
+    },
+    {
+      "name": "joinToken 소실 시나리오",
+      "status": "PASS",
+      "evidence": "client/src/pages/IndustrySelectPage.tsx redirects to /join?code=:code when localStorage token is missing, and shows an inline closed-session message when GET /api/sessions/:code returns 410."
+    },
+    {
+      "name": "Out of Scope / 기타 스캔",
+      "status": "PASS",
+      "evidence": [
+        "No Gemini API call, interview_attempts table, real STT implementation, report, dashboard, or Zustand usage found in client/src, server/src, or supabase.",
+        "No baseUrl usage found in client/server tsconfig files.",
+        "Component/page/function file length spot check stayed below project limits for inspected files."
+      ]
+    },
+    {
+      "name": "SENTINEL-SPEC.md availability",
+      "status": "WARN",
+      "evidence": "qa/ao-logs/SENTINEL-SPEC.md was not present in either /home/claude/job-interview or the detached evaluation worktree. Existing round1 sentinel JSON shape was followed."
+    }
+  ]
+}
