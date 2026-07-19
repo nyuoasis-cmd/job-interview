@@ -1,9 +1,9 @@
-import { getCoachModels } from './client.js'
+import { getCoachChain, type CoachProvider } from './coachConfig.js'
+import type { CoachResult } from '../types/index.js'
 
 /**
- * 코치 호출 회로차단 + 모델 폴백 루프. 자소서 job-prep/services/gemini/fallback.ts 미러.
- * PR1: primary(Haiku)만. ANTHROPIC_COACH_FALLBACK_MODEL 설정 시 2차 모델까지 순회.
- * 쿼터/과부하 연속 실패 시 열려서 잠시 429로 빠르게 실패(수업 대량 인입 보호).
+ * 코치 모델 체인 순회 + 회로차단. provider별 러너를 받아 getCoachChain() 순서대로 시도.
+ * 취업 브랜딩 표준 = Haiku 4.5 → Gemini 3.5 Flash(설정 시). 연속 쿼터/과부하 실패 시 잠시 429로 빠르게 실패.
  */
 
 const quotaPattern = /\b429\b|\b529\b|too many requests|rate[_ ]?limit|overloaded|resource[_ ]?exhausted|quota/i
@@ -24,9 +24,12 @@ export class CoachError extends Error {
   }
 }
 
-export type CoachFallbackResult<T> = {
-  value: T
+export type CoachRunners = Record<CoachProvider, (model: string) => Promise<CoachResult>>
+
+export type CoachFallbackResult = {
+  value: CoachResult
   aiModel: string
+  provider: CoachProvider
   fallbackUsed: boolean
 }
 
@@ -39,24 +42,23 @@ export function isQuotaError(error: unknown): boolean {
   return quotaPattern.test(message)
 }
 
-export async function withCoachFallback<T>(task: (model: string) => Promise<T>): Promise<CoachFallbackResult<T>> {
+export async function withCoachFallback(runners: CoachRunners): Promise<CoachFallbackResult> {
   if (failureState.count >= maxFailures && Date.now() - failureState.openedAt < cooldownMs) {
     throw new CoachError(429, 'RATE_LIMIT', '지금 이용자가 많아요, 잠시 후 다시 시도해주세요.', 60)
   }
 
-  const { primaryModel, fallbackModel } = getCoachModels()
-  const models = fallbackModel && fallbackModel !== primaryModel ? [primaryModel, fallbackModel] : [primaryModel]
+  const chain = getCoachChain()
   const errors: unknown[] = []
 
-  for (let index = 0; index < models.length; index += 1) {
-    const model = models[index]!
+  for (let index = 0; index < chain.length; index += 1) {
+    const ref = chain[index]!
     try {
-      const value = await task(model)
+      const value = await runners[ref.provider](ref.model)
       failureState.count = 0
-      return { value, aiModel: model, fallbackUsed: index > 0 }
+      return { value, aiModel: ref.model, provider: ref.provider, fallbackUsed: index > 0 }
     } catch (error) {
       errors.push(error)
-      if (index < models.length - 1) continue
+      if (index < chain.length - 1) continue
     }
   }
 
