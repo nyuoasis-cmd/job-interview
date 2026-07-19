@@ -1,8 +1,9 @@
 import { timingSafeEqual } from 'node:crypto'
 import { Router } from 'express'
 import { supabaseAdmin } from '../db.js'
-import { coachInterviewAnswer } from '../services/anthropic/coach.js'
-import { CoachError, withCoachFallback } from '../services/anthropic/fallback.js'
+import { coachViaAnthropic } from '../services/anthropic/coach.js'
+import { coachViaGemini } from '../services/gemini/coach.js'
+import { CoachError, withCoachFallback } from '../services/coachFallback.js'
 
 export const coachRouter = Router()
 
@@ -72,14 +73,19 @@ coachRouter.post('/api/participants/:id/coach', async (req, res, next) => {
       .filter((v): v is string => Boolean(v))
       .join(' ')
 
-    const result = await withCoachFallback((model) =>
-      coachInterviewAnswer(
-        { question, rawAnswer, rawFollowup: rawFollowup || undefined, questionType: questionType || undefined, industryHint },
-        model,
-      ),
-    )
+    const input = {
+      question,
+      rawAnswer,
+      rawFollowup: rawFollowup || undefined,
+      questionType: questionType || undefined,
+      industryHint,
+    }
+    const result = await withCoachFallback({
+      anthropic: (model) => coachViaAnthropic(input, model),
+      gemini: (model) => coachViaGemini(input, model),
+    })
 
-    res.json({ ...result.value, aiModel: result.aiModel, fallbackUsed: result.fallbackUsed })
+    res.json({ ...result.value, aiModel: result.aiModel, provider: result.provider, fallbackUsed: result.fallbackUsed })
   } catch (err) {
     if (err instanceof CoachError) {
       const body: Record<string, unknown> = { error: err.code, message: err.message }
