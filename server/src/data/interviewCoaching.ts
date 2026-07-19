@@ -134,6 +134,39 @@ export function selectFewshot(questionType: string, hintText: string, limit = 3)
   return [...preferred, ...rest].slice(0, limit)
 }
 
+/** commonQuestion id → coach few-shot 선택용 questionType. 미매핑은 ''(전체 pool 폴백). */
+const questionTypeById: Record<string, string> = {
+  'common-selfintro': 'self-intro-strategic',
+  'common-selfintro-real': 'self-intro-natural',
+  'common-motivation': 'motivation',
+  'common-whyyou': 'motivation',
+  'common-strength': 'strength',
+  'common-weakness': 'weakness',
+  'common-teamwork': 'personality',
+  'common-adversity': 'adversity',
+  'common-stress': 'adversity',
+  'common-closing': 'closing',
+}
+
+export type PracticeQuestion = {
+  id: string
+  question: string
+  category: string
+  questionType: string
+  intent: string | null
+}
+
+/** 학생 연습용 공통 질문 시퀀스(순서 고정) + few-shot 선택용 questionType. */
+export function listPracticeQuestions(): PracticeQuestion[] {
+  return commonQuestions.map((q) => ({
+    id: q.id,
+    question: q.question,
+    category: q.category,
+    questionType: questionTypeById[q.id] ?? '',
+    intent: q.intent ?? null,
+  }))
+}
+
 /** 공통 질문 은행에서 질문 텍스트로 의도·가이드를 최선 매칭(자기소개·지원동기 등). */
 export function selectCommonQuestion(questionText: string): CommonQuestion | null {
   const q = (questionText || '').trim()
