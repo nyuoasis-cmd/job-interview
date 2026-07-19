@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { coachRouter } from './coach.js'
 import { configRouter } from './config.js'
 import { industriesRouter } from './industries.js'
 import { participantsRouter } from './participants.js'
@@ -11,6 +12,7 @@ export function createApiRouter(): Router {
   router.use(industriesRouter)
   router.use(participantsRouter)
   router.use(sessionsRouter)
+  router.use(coachRouter)
 
   return router
 }
