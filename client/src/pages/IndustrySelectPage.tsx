@@ -104,6 +104,7 @@ export default function IndustrySelectPage({ disabled }: { disabled: boolean }) 
       setError(patchMessages[payload.error || ''] || '직종 선택 중 문제가 발생했습니다.')
       return
     }
+    localStorage.setItem('interview_industry_label', selectedSub.name)
     setDone(true)
   }
 
@@ -118,8 +119,15 @@ export default function IndustrySelectPage({ disabled }: { disabled: boolean }) 
       {done ? (
         <section className="mt-8 rounded-md border border-[#b7d3bf] bg-white p-6">
           <CheckCircle className="text-green-700" size={32} aria-hidden="true" />
-          <h2 className="mt-4 text-xl font-bold">준비 중입니다</h2>
-          <p className="mt-2 text-[#5a675e]">다음 PR에서 면접 질문 화면으로 연결됩니다.</p>
+          <h2 className="mt-4 text-xl font-bold">직종을 선택했어요</h2>
+          <p className="mt-2 text-[#5a675e]">이제 실제 면접처럼 질문에 답해볼까요? 답하면 AI 코치가 바로 봐줘요.</p>
+          <button
+            type="button"
+            onClick={() => navigate(`/session/${code}/practice`)}
+            className="mt-5 rounded-md bg-[#3b5bdb] px-5 py-3 font-bold text-white"
+          >
+            면접 연습 시작 ›
+          </button>
         </section>
       ) : (
         <>

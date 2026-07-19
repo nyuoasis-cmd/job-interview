@@ -1,0 +1,154 @@
+/* 면접 연습 채팅 화면 — 승인 목업(job-prep 블루 정합) 이식. 전부 .ipc-root 하위로 스코프. */
+.ipc-root {
+  --brand: #3b5bdb;
+  --brand-dark: #2f49b5;
+  --brand-soft: #edf1ff;
+  --ink: #172033;
+  --muted: #687186;
+  --line: #dce3f1;
+  --surface: #ffffff;
+  --canvas: #f6f8fc;
+  --coach: #d9480f;
+  --coach-soft: #fff1e8;
+  --coach-line: #ffd6a3;
+  --good: #2b8a3e;
+  --good-soft: #eef7f0;
+  --warn: #e67700;
+  --warn-soft: #fff7e6;
+  --shadow: 0 12px 36px rgba(25, 40, 80, 0.12);
+  --shadow-sm: 0 4px 14px rgba(25, 40, 80, 0.08);
+  display: block;
+  background: var(--canvas);
+  color: var(--ink);
+  min-height: 100%;
+  padding: 24px 16px 40px;
+  font-family: Pretendard, Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+.ipc-root * { box-sizing: border-box; }
+
+.ipc-root .ipc-shell {
+  width: min(640px, 100%);
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ipc-root .appbar {
+  background: var(--brand);
+  color: #fff;
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ipc-root .appbar .who { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 14px; }
+.ipc-root .appbar .who .dot {
+  width: 26px; height: 26px; border-radius: 8px; background: rgba(255, 255, 255, 0.18);
+  display: grid; place-items: center; font-size: 14px;
+}
+.ipc-root .appbar .prog {
+  font-size: 11.5px; font-weight: 700; color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.15); padding: 4px 9px; border-radius: 999px;
+}
+.ipc-root .progbar { height: 3px; background: rgba(59, 91, 219, 0.18); }
+.ipc-root .progbar i { display: block; height: 100%; background: var(--brand); transition: width 0.4s ease; }
+
+.ipc-root .chat {
+  padding: 15px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  background: linear-gradient(var(--canvas), #fbfcfe);
+  height: 60vh;
+  min-height: 380px;
+  overflow-y: auto;
+}
+
+.ipc-root .msg { display: flex; gap: 9px; max-width: 100%; }
+.ipc-root .av {
+  width: 28px; height: 28px; border-radius: 9px; flex: none; display: grid; place-items: center;
+  font-size: 14px; box-shadow: var(--shadow-sm);
+}
+.ipc-root .av.itv { background: #eef1f6; border: 1px solid var(--line); }
+.ipc-root .av.stu { background: var(--brand); color: #fff; font-size: 12px; font-weight: 800; }
+.ipc-root .av.ai { background: var(--coach-soft); border: 1px solid var(--coach-line); }
+.ipc-root .bubble { padding: 11px 13px; border-radius: 13px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; }
+.ipc-root .name { font-size: 11px; font-weight: 800; letter-spacing: 0.02em; margin-bottom: 4px; color: var(--muted); }
+.ipc-root .itv-row .bubble { background: var(--surface); border: 1px solid var(--line); border-top-left-radius: 4px; }
+.ipc-root .stu-row { flex-direction: row-reverse; }
+.ipc-root .stu-row .bubble { background: var(--brand); color: #fff; border-top-right-radius: 4px; box-shadow: var(--shadow-sm); }
+.ipc-root .stu-row .name { text-align: right; color: var(--brand); }
+
+.ipc-root .coach {
+  background: var(--coach-soft); border: 1px solid var(--coach-line); border-radius: 13px;
+  border-top-left-radius: 4px; padding: 12px 13px; font-size: 13px; line-height: 1.55; width: 100%;
+}
+.ipc-root .coach.loading { color: var(--coach); font-weight: 700; }
+.ipc-root .coach .lead {
+  display: flex; align-items: center; gap: 7px; font-weight: 900; color: var(--coach);
+  font-size: 12.5px; letter-spacing: 0.02em; margin-bottom: 9px;
+}
+.ipc-root .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.ipc-root .chip {
+  font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.ipc-root .chip.ok { background: var(--good-soft); color: var(--good); border: 1px solid #cbe6d2; }
+.ipc-root .chip.warn { background: var(--warn-soft); color: var(--warn); border: 1px solid #ffe3ad; }
+.ipc-root .fb { margin: 0 0 10px; padding: 0 0 0 2px; list-style: none; display: grid; gap: 6px; }
+.ipc-root .fb li { font-size: 12.5px; line-height: 1.5; color: #35415a; padding-left: 12px; position: relative; }
+.ipc-root .fb li::before { content: '·'; position: absolute; left: 2px; color: var(--coach); font-weight: 900; }
+.ipc-root .probe { background: var(--surface); border: 1px solid var(--coach-line); border-radius: 10px; padding: 10px 11px; }
+.ipc-root .probe .plab {
+  font-size: 10.5px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--coach); margin-bottom: 5px;
+}
+.ipc-root .probe p { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.5; }
+.ipc-root .polish { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; }
+.ipc-root .polish .plab {
+  font-size: 10.5px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--good); margin-bottom: 5px;
+}
+.ipc-root .polish p { margin: 0; font-size: 13px; line-height: 1.58; }
+.ipc-root .guard { display: flex; gap: 6px; align-items: flex-start; margin-top: 9px; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+.ipc-root .guard svg { flex: none; margin-top: 1px; color: var(--muted); }
+
+.ipc-root .ipc-error {
+  font-size: 12.5px; color: #b02a37; background: #fdf0f1; border: 1px solid #f3c6cb;
+  border-radius: 9px; padding: 9px 11px;
+}
+
+.ipc-root .inputbar {
+  border-top: 1px solid var(--line); background: var(--surface); padding: 11px 12px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.ipc-root .field { display: flex; align-items: flex-end; gap: 8px; }
+.ipc-root .field .box {
+  flex: 1; border: 1px solid var(--line); border-radius: 11px; padding: 10px 13px;
+  font-size: 13.5px; color: var(--ink); background: #fff; resize: none; font-family: inherit;
+  line-height: 1.5; max-height: 120px; min-height: 42px;
+}
+.ipc-root .field .box:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+.ipc-root .mic {
+  width: 42px; height: 42px; border-radius: 11px; border: 1px solid var(--line); flex: none;
+  display: grid; place-items: center; background: #fff; color: var(--muted); position: relative; opacity: 0.7;
+}
+.ipc-root .mic .beta {
+  position: absolute; top: -7px; right: -9px; font-size: 8px; font-weight: 900;
+  background: var(--muted); color: #fff; padding: 2px 5px; border-radius: 999px;
+}
+.ipc-root .send {
+  width: 42px; height: 42px; border-radius: 11px; border: 0; flex: none; display: grid;
+  place-items: center; background: var(--brand); color: #fff; box-shadow: var(--shadow-sm); cursor: pointer;
+}
+.ipc-root .send:disabled { background: #aab6d8; cursor: default; box-shadow: none; }
+.ipc-root .nextbtn {
+  width: 100%; border: 0; border-radius: 11px; padding: 13px; background: var(--brand);
+  color: #fff; font-weight: 800; font-size: 14px; box-shadow: var(--shadow-sm); cursor: pointer;
+}
+.ipc-root .nextbtn:disabled { background: #aab6d8; cursor: default; }

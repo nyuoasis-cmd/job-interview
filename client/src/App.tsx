@@ -6,6 +6,7 @@ import AuthCallback from './pages/AuthCallback'
 import DemoPage from './pages/DemoPage'
 import DevLoginPage from './pages/DevLoginPage'
 import IndustrySelectPage from './pages/IndustrySelectPage'
+import InterviewPracticePage from './pages/InterviewPracticePage'
 import JoinPage from './pages/JoinPage'
 import LandingPage from './pages/LandingPage'
 import TeacherSessionPage from './pages/TeacherSessionPage'
@@ -69,6 +70,7 @@ function Layout() {
         <Route path="/" element={<LandingPage disabled={!configOk} />} />
         <Route path="/join" element={<JoinPage disabled={!configOk} />} />
         <Route path="/session/:code/industry" element={<IndustrySelectPage disabled={!configOk} />} />
+        <Route path="/session/:code/practice" element={<InterviewPracticePage disabled={!configOk} />} />
         <Route path="/teacher/sessions" element={<AuthGuard><TeacherSessionPage disabled={!configOk} /></AuthGuard>} />
         <Route path="/demo" element={<DemoPage disabled={!configOk} />} />
         <Route path="/dev-login" element={<DevLoginPage />} />

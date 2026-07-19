@@ -1,11 +1,17 @@
 import { timingSafeEqual } from 'node:crypto'
 import { Router } from 'express'
 import { supabaseAdmin } from '../db.js'
+import { listPracticeQuestions } from '../data/interviewCoaching.js'
 import { coachViaAnthropic } from '../services/anthropic/coach.js'
 import { coachViaGemini } from '../services/gemini/coach.js'
 import { CoachError, withCoachFallback } from '../services/coachFallback.js'
 
 export const coachRouter = Router()
+
+// GET /api/interview/questions — 학생 연습용 공통 질문 시퀀스(민감정보 없음, 공개).
+coachRouter.get('/api/interview/questions', (_req, res) => {
+  res.json({ questions: listPracticeQuestions() })
+})
 
 const MAX_QUESTION_LEN = 300
 const MAX_ANSWER_LEN = 2000
